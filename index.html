@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diário de Dores de Cabeça</title>
+<meta name="theme-color" content="#f6f2ec">
+<meta name="description" content="Registe as suas dores de cabeça e gere um relatório para o médico. Funciona sem internet.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f6f2ec; --card:#ffffff; --ink:#1d2733; --muted:#6a7280; --line:#e6ddd2;
+  --accent:#c4463d; --accent-soft:#fbe8e4; --ok:#2f7a58; --warn:#a8641a; --warn-soft:#fdf1dc;
+  --chip:#f3ede6; --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:780px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 14px 120px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:6px 2px 14px}
+h1.brand{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:26px;line-height:1.1;margin:0;letter-spacing:-.01em}
+.brand small{display:block;font-family:"DM Sans",sans-serif;font-size:13px;color:var(--muted);font-weight:500;margin-top:4px;letter-spacing:0}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#c9c1b6}
+.status.ok .dot{background:var(--ok)} .status.warn .dot{background:var(--warn)}
+nav.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:#ebe4da;border-radius:14px;padding:4px;gap:4px;margin-bottom:16px;position:sticky;top:8px;z-index:5;box-shadow:0 2px 10px rgba(30,20,10,.06)}
+nav.tabs button{border:0;background:transparent;padding:10px 6px;border-radius:10px;font-weight:600;font-size:14px;color:#5b5348;cursor:pointer}
+nav.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:18px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.card h2 .n{font-family:"DM Sans";font-size:12px;font-weight:700;color:#fff;background:var(--ink);border-radius:999px;width:22px;height:22px;display:inline-grid;place-items:center;flex:none}
+.hint{font-size:13px;color:var(--muted);margin:0 0 12px}
+label.f{display:block;font-size:13px;font-weight:600;color:#4a4f57;margin:0 0 6px}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.row > .col{flex:1 1 200px}
+input[type=datetime-local],input[type=text],input[type=number],input[type=time],select,textarea{width:100%;border:1px solid var(--line);background:#fcfaf7;border-radius:10px;padding:10px 12px;min-height:44px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#b9a996;background:#fff}
+textarea{min-height:90px;resize:vertical}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;min-height:44px;font-weight:600;cursor:pointer}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:14px}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--accent);border-color:#efc9c3}
+.btn.danger.confirm{background:var(--accent);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid transparent;background:var(--chip);border-radius:999px;padding:8px 13px;font-size:14px;font-weight:500;cursor:pointer;min-height:38px;text-align:left}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:#8f2c25;font-weight:600}
+.chip.on::before{content:"✓ ";}
+.sub{margin-top:14px}
+.dur{font-size:14px;color:var(--muted);margin-top:10px}
+.dur b{color:var(--ink)}
+/* intensity */
+.intens{display:flex;align-items:center;gap:16px}
+.intens .big{font-family:Fraunces,serif;font-size:44px;font-weight:600;width:70px;text-align:center;line-height:1}
+.intens .lbl{font-size:14px;font-weight:600}
+input[type=range]{width:100%;appearance:none;-webkit-appearance:none;height:12px;border-radius:999px;background:linear-gradient(90deg,#9cc8a8 0%,#f2cf5b 35%,#f09a4a 65%,#c4463d 100%);outline:none;margin:14px 0 6px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;border-radius:50%;background:#fff;border:3px solid var(--ink);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--ink);cursor:pointer}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+/* head map */
+.heads{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.headbox{background:#faf7f3;border:1px solid var(--line);border-radius:14px;padding:8px 6px 4px;text-align:center}
+.headbox .t{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.headbox svg{width:100%;height:auto;display:block;max-width:240px;margin:0 auto;touch-action:manipulation}
+svg .rg{cursor:pointer;transition:fill .15s}
+.sel-list{font-size:14px;margin-top:10px;min-height:20px}
+.sel-list .pill{display:inline-block;background:var(--accent-soft);color:#8f2c25;border-radius:999px;padding:3px 10px;margin:3px 4px 0 0;font-size:13px;font-weight:600}
+/* meds */
+.med{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fcfaf7}
+.med .grid{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.med .grid3{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;margin-top:8px}
+.med .mini{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.med .rm{float:right;border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px}
+.alarm{display:none;margin-top:12px;background:#fde6e2;border:1px solid #f1b3aa;color:#7d231c;border-radius:12px;padding:12px;font-size:14px}
+.alarm.show{display:block}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:rgba(246,242,236,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:10}
+.savebar .in{max-width:780px;margin:0 auto;display:flex;gap:10px}
+.savebar .btn{flex:1}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.seg{display:inline-flex;background:#ebe4da;border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:7px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;color:#5b5348}
+.seg button.on{background:#fff;color:var(--ink)}
+/* history */
+.ep{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.ep .h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ep .d{font-weight:700}
+.ep .m{font-size:13px;color:var(--muted)}
+.badge{flex:none;min-width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:Fraunces,serif;font-weight:600;font-size:20px;color:#fff}
+.ep .tags{margin-top:8px;font-size:13px;color:#454b53}
+.ep .tags span{display:inline-block;background:var(--chip);border-radius:999px;padding:2px 9px;margin:3px 4px 0 0}
+.ep .tags span.aura{background:#e7e3f7;color:#433a7a;font-weight:600}
+.ep .tags span.live{background:#fde6e2;color:#8f2c25;font-weight:700}
+.ep .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.empty{text-align:center;color:var(--muted);padding:40px 20px}
+.empty .e{font-family:Fraunces,serif;font-size:20px;color:var(--ink);margin-bottom:6px}
+.exp{display:flex;gap:8px;flex-wrap:wrap}
+.exp .btn{flex:1 1 150px}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+.hidden{display:none!important}
+#installBtn{margin-bottom:12px;width:100%}
+@media print{
+  @page{size:A4;margin:10mm}
+  html,body{background:#fff}
+  .wrap{padding:0;max-width:none}
+  header.top,nav.tabs,#v-log,#v-hist,.savebar,.toast,#v-rep > .card:not(.repcard),#installBtn{display:none!important}
+  #v-rep{display:block!important}
+  .repcard{border:0!important;padding:0!important;margin:0!important}
+  .rep .scroll{overflow:visible}.rep .scroll table.wide{min-width:0}.rep table{font-size:10px}
+  .rep .kpis{grid-template-columns:repeat(3,1fr)!important}.rep .g2{grid-template-columns:1fr 1fr!important}.rep .heads2{grid-template-columns:1fr 1fr 1.1fr!important}
+  .rep *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (max-width:420px){ .med .grid3{grid-template-columns:1fr 1fr} .med .grid3 .rl{grid-column:1/-1} }
+</style>
+<style id="repcss">
+.rep{font-family:"DM Sans",system-ui,sans-serif;color:#1d2733;background:#fff;line-height:1.4}
+.rep h1{font-family:Fraunces,Georgia,serif;font-size:24px;margin:0;font-weight:600}
+.rep h3{font-family:Fraunces,Georgia,serif;font-size:17px;font-weight:600;margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid #e6ddd2}
+.rep .rh{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;border-bottom:2px solid #1d2733;padding-bottom:10px}
+.rep .rh p{margin:4px 0 0;font-size:13px;color:#6a7280}
+.rep .who{font-size:13px;text-align:right}
+.rep .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.rep .kpi{border:1px solid #e6ddd2;border-radius:10px;padding:10px}
+.rep .kpi .v{font-family:Fraunces,Georgia,serif;font-size:24px;font-weight:600;line-height:1.1}
+.rep .kpi .k{font-size:12px;color:#6a7280;font-weight:600}
+.rep .kpi .s{font-size:11px;color:#6a7280}
+.rep .info{font-size:13px;margin:10px 0 0;background:#faf7f3;border-radius:8px;padding:8px 10px}
+.rep .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.rep .bar{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 70px;gap:8px;align-items:center;font-size:12.5px;margin-bottom:5px}
+.rep .bar .tr{height:9px;background:#f1ebe4;border-radius:99px;overflow:hidden}
+.rep .bar .fl{height:100%;background:#c4463d;border-radius:99px}
+.rep .bar .c{text-align:right;color:#6a7280;font-variant-numeric:tabular-nums}
+.rep .none{font-size:13px;color:#6a7280}
+.rep .heads2{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:12px;align-items:center}
+.rep .heads2 svg{width:100%;height:auto;max-width:200px;display:block;margin:0 auto}
+.rep .heads2 .t{text-align:center;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6a7280}
+.rep .months{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.rep .mo .mt{font-weight:700;font-size:13px;margin-bottom:4px}
+.rep .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.rep .cal div{aspect-ratio:1;border-radius:4px;font-size:10px;display:grid;place-items:center;background:#f6f2ec;color:#8a8f96}
+.rep .cal div.hd{background:transparent;font-weight:700;color:#6a7280}
+.rep .cal div.x{background:transparent}
+.rep .cal div.p{color:#fff;font-weight:700}
+.rep .cal div.m{box-shadow:inset 0 0 0 2px #1d2733}
+.rep .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#6a7280;margin-top:8px;align-items:center}
+.rep .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.rep table{width:100%;border-collapse:collapse;font-size:12px}
+.rep th{text-align:left;font-size:11px;color:#6a7280;font-weight:700;border-bottom:1px solid #e6ddd2;padding:6px 5px;vertical-align:bottom}
+.rep td{border-bottom:1px solid #f0e9e1;padding:6px 5px;vertical-align:top}
+.rep tr{page-break-inside:avoid}
+.rep .int{display:inline-block;min-width:24px;text-align:center;border-radius:6px;color:#fff;font-weight:700;padding:1px 4px}
+.rep .flag{background:#fde6e2;border:1px solid #f1b3aa;color:#7d231c;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:6px}
+.rep .foot{margin-top:20px;font-size:11px;color:#6a7280;border-top:1px solid #e6ddd2;padding-top:8px}
+.rep .avoid{page-break-inside:avoid}
+.rep .scroll{overflow-x:auto}
+.rep .scroll table.wide{min-width:760px}
+@media (max-width:560px){ .rep .kpis{grid-template-columns:repeat(2,1fr)} .rep .g2{grid-template-columns:1fr} .rep .heads2{grid-template-columns:1fr 1fr} .rep .heads2 .sides{grid-column:1/-1} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand">Diário de dores de cabeça<small>Registe cada episódio para mostrar ao médico</small></h1>
+    <div class="status" id="status"><span class="dot"></span><span id="statusTxt">A ligar…</span></div>
+  </header>
+
+  <button class="btn primary hidden" type="button" id="installBtn">📲 Instalar a app no telefone</button>
+  <nav class="tabs" id="tabs">
+    <button data-tab="log" class="on">Registar</button>
+    <button data-tab="hist">Histórico</button>
+    <button data-tab="rep">Relatório</button>
+  </nav>
+
+  <!-- ============ REGISTAR ============ -->
+  <section id="v-log">
+    <div class="card" id="editBanner" style="display:none;background:#fdf1dc;border-color:#efd29f">
+      <b>A editar um registo</b> <span class="hint" id="editWhen" style="margin:0"></span>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">1</span>Quando</h2>
+      <p class="hint">Deixe o fim vazio se a dor ainda está a decorrer — pode terminá-la mais tarde no Histórico.</p>
+      <div class="row">
+        <div class="col"><label class="f" for="fStart">Início</label><input type="datetime-local" id="fStart"></div>
+        <button class="btn sm" type="button" data-now="fStart">Agora</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="col"><label class="f" for="fEnd">Fim</label><input type="datetime-local" id="fEnd"></div>
+        <button class="btn sm" type="button" data-now="fEnd">Agora</button>
+      </div>
+      <div class="dur" id="durTxt"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>Intensidade</h2>
+      <p class="hint">No pior momento do episódio. 0 = sem dor, 10 = a pior dor imaginável.</p>
+      <div class="intens">
+        <div class="big" id="intVal">5</div>
+        <div style="flex:1">
+          <div class="lbl" id="intLbl">Moderada</div>
+          <input type="range" min="0" max="10" step="1" id="fInt" aria-label="Intensidade">
+          <div class="scale"><span>0</span><span>Ligeira</span><span>Moderada</span><span>Forte</span><span>10</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>Localização</h2>
+      <p class="hint">Toque nas zonas onde dói. Na vista de frente, o seu lado direito aparece à esquerda (como num espelho virado para si).</p>
+      <div class="heads" id="headPick"></div>
+      <div class="sel-list" id="regList"></div>
+      <div style="margin-top:8px"><button class="btn sm ghost" type="button" id="clrReg">Limpar zonas</button></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>Como é a dor</h2>
+      <p class="hint">Escolha todas as que se aplicam.</p>
+      <div class="chips" data-key="quality"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">5</span>Sinais e sintomas</h2>
+      <p class="hint">O que sentiu antes, durante ou depois da dor.</p>
+      <div class="chips" data-key="symptoms"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">6</span>Aura</h2>
+      <p class="hint">Alterações temporárias (visão, sensibilidade, fala) que costumam surgir antes da dor e duram 5–60 minutos.</p>
+      <div class="chips" data-key="auraYN" data-single="1"></div>
+      <div id="auraBox" class="sub hidden">
+        <label class="f">Tipo de aura</label>
+        <div class="chips" data-key="auraTypes"></div>
+        <label class="f" style="margin-top:14px">Quando surgiu</label>
+        <div class="chips" data-key="auraTiming" data-single="1"></div>
+        <div class="row" style="margin-top:14px"><div class="col" style="max-width:220px"><label class="f" for="fAuraMin">Duração da aura (minutos)</label><input type="number" min="0" inputmode="numeric" id="fAuraMin" placeholder="ex: 20"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">7</span>Possíveis gatilhos</h2>
+      <p class="hint">O que aconteceu nas 24 horas anteriores e pode ter contribuído.</p>
+      <div class="chips" data-key="triggers"></div>
+      <div class="sub"><label class="f" for="fTrigOther">Outro gatilho</label><input type="text" id="fTrigOther" placeholder="ex: reunião longa, perfume, jejum…"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">8</span>Tratamentos e alívio</h2>
+      <p class="hint">Medicamentos tomados e quanto ajudaram.</p>
+      <div id="meds"></div>
+      <button class="btn sm" type="button" id="addMed">+ Adicionar medicamento</button>
+      <datalist id="medList"></datalist>
+      <label class="f" style="margin-top:16px">Outras medidas</label>
+      <div class="chips" data-key="nonMed"></div>
+      <label class="f" style="margin-top:16px">Alívio geral no fim do episódio</label>
+      <div class="chips" data-key="overall" data-single="1"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">9</span>Impacto no dia</h2>
+      <div class="chips" data-key="impact" data-single="1"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">10</span>Sinais de alarme</h2>
+      <p class="hint">Marque se algum destes aconteceu.</p>
+      <div class="chips" data-key="redFlags"></div>
+      <div class="alarm" id="alarm"><b>Estes sinais justificam avaliação médica urgente.</b> Ligue 112 ou o SNS 24 (808 24 24 24), ou dirija-se a uma urgência.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">11</span>Notas</h2>
+      <textarea id="fNotes" placeholder="Qualquer detalhe que queira contar ao médico…"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ HISTÓRICO ============ -->
+  <section id="v-hist" class="hidden">
+    <div id="histList"></div>
+  </section>
+
+  <!-- ============ RELATÓRIO ============ -->
+  <section id="v-rep" class="hidden">
+    <div class="card">
+      <h2>Para o relatório</h2>
+      <div class="row">
+        <div class="col"><label class="f" for="pName">Nome</label><input type="text" id="pName" placeholder="Opcional"></div>
+      </div>
+      <div style="margin-top:10px"><label class="f" for="pPrev">Medicação habitual / preventiva</label><input type="text" id="pPrev" placeholder="ex: topiramato 50 mg/dia desde março"></div>
+      <div style="margin-top:10px"><label class="f" for="pNotes">Perguntas ou notas para o médico</label><textarea id="pNotes" style="min-height:70px"></textarea></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+        <div class="seg" id="period">
+          <button data-p="30">30 dias</button><button data-p="90" class="on">3 meses</button><button data-p="365">12 meses</button><button data-p="0">Tudo</button>
+        </div>
+      </div>
+      <div class="exp">
+        <button class="btn primary" type="button" id="exPdf">Enviar PDF ao médico</button>
+        <button class="btn" type="button" id="exPrint">Imprimir</button>
+        <button class="btn" type="button" id="exCsv">Dados (CSV)</button>
+        <button class="btn" type="button" id="exCopy">Copiar resumo</button>
+      </div>
+      <div class="note">O PDF tem tudo o que está abaixo. Pode enviá-lo por WhatsApp ou email, ou mostrá-lo na consulta.</div>
+    </div>
+    <div class="card repcard" style="padding:18px"><div id="repView"></div></div>
+    <div class="card">
+      <h2>Os seus dados</h2>
+      <p class="hint">Os registos ficam guardados só neste telefone. Faça uma cópia de segurança de vez em quando — se limpar os dados do navegador ou mudar de telefone, é assim que os recupera.</p>
+      <div class="exp">
+        <button class="btn" type="button" id="bkExport">Guardar cópia de segurança</button>
+        <button class="btn" type="button" id="bkImport">Restaurar cópia</button>
+      </div>
+      <input type="file" id="bkFile" accept=".json,application/json" class="hidden">
+      <div class="note" id="bkInfo"></div>
+    </div>
+    <div class="card">
+      <h2>Partilhar a app</h2>
+      <p class="hint">Envie a app a um familiar. Cada pessoa tem o seu próprio diário, guardado no seu telefone — ninguém vê os registos dos outros.</p>
+      <button class="btn" type="button" id="shareApp" style="width:100%">Enviar a app a alguém</button>
+    </div>
+  </section>
+</div>
+
+<div class="savebar" id="saveBar"><div class="in">
+  <button class="btn ghost hidden" type="button" id="cancelEdit">Cancelar</button>
+  <button class="btn accent" type="button" id="saveBtn">Guardar registo</button>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------------- options ---------------- */
+const OPT = {
+  quality:['Latejante / pulsátil','Pressão / aperto (como uma banda)','Pontada / facada','Choque elétrico','Ardor / queimadura','Peso','Surda / constante'],
+  symptoms:['Náuseas','Vómitos','Sensibilidade à luz','Sensibilidade ao som','Sensibilidade a cheiros','Piora com esforço / movimento','Tonturas / vertigem','Visão turva','Lacrimejo','Olho vermelho','Nariz entupido / a pingar','Pálpebra descaída','Rigidez / dor no pescoço','Dor no maxilar','Cansaço / bocejos','Dificuldade de concentração','Irritabilidade','Fome / desejos alimentares'],
+  auraYN:['Não','Sim'],
+  auraTypes:['Visual (luzes, zigue-zagues, manchas)','Perda de visão parcial','Formigueiro / dormência','Dificuldade em falar','Fraqueza num lado do corpo','Tonturas / desequilíbrio'],
+  auraTiming:['Antes da dor','Durante a dor','Sem dor de cabeça'],
+  triggers:['Stress','Fim de stress / fim de semana','Dormiu pouco','Dormiu demais','Saltou refeição','Pouca água','Álcool','Vinho tinto','Cafeína em excesso','Falta de cafeína','Chocolate','Queijos curados','Enchidos / fumados','Adoçantes','Menstruação','Ecrãs prolongados','Luz intensa / cintilante','Cheiros fortes','Barulho','Mudança de tempo','Calor','Esforço físico','Má postura / tensão no pescoço','Viagem','Tabaco / fumo'],
+  nonMed:['Repouso no escuro','Dormir','Gelo / frio','Calor local','Massagem','Beber água','Café','Comer','Relaxamento / respiração','Duche'],
+  overall:['Sem alívio','Alívio parcial','Alívio total'],
+  impact:['Nenhum','Ligeiro — continuou as atividades','Moderado — reduziu as atividades','Grave — teve de parar / deitar-se'],
+  redFlags:['Início súbito e muito intenso (a pior de sempre)','Febre com rigidez do pescoço','Fraqueza ou dormência que não passa','Confusão ou dificuldade em falar','Após pancada na cabeça','Perda de consciência / convulsão'],
+};
+const MEDS=['Paracetamol','Ibuprofeno','Naproxeno','Ácido acetilsalicílico','Diclofenac','Metamizol','Paracetamol + cafeína','Sumatriptano','Zolmitriptano','Rizatriptano','Eletriptano','Almotriptano','Naratriptano','Frovatriptano','Metoclopramida','Domperidona'];
+const RELIEF=['','Sem alívio','Alívio parcial','Alívio total'];
+
+/* ---------------- head regions ---------------- */
+const REG = {
+  front:[
+    ['vertex',0,0,220,62],
+    ['temple_R',0,62,52,78],['forehead_R',52,62,58,44],['eye_R',52,106,58,34],
+    ['forehead_L',110,62,58,44],['eye_L',110,106,58,34],['temple_L',168,62,52,78],
+    ['face_R',0,140,110,46],['face_L',110,140,110,46],
+    ['jaw_R',0,186,110,64],['jaw_L',110,186,110,64]
+  ],
+  back:[
+    ['vertex',0,0,220,62],
+    ['parietal_L',0,62,110,78],['parietal_R',110,62,110,78],
+    ['occipital_L',0,140,110,106],['occipital_R',110,140,110,106]
+  ]
+};
+const NECK=[['neck_L',80,226,30,60],['neck_R',110,226,30,60]];
+const LBLPT={
+  front:{vertex:[110,46],temple_R:[42,104],forehead_R:[82,88],eye_R:[82,126],forehead_L:[138,88],eye_L:[138,126],temple_L:[178,104],face_R:[64,166],face_L:[156,166],jaw_R:[80,212],jaw_L:[140,212]},
+  back:{vertex:[110,46],parietal_L:[62,104],parietal_R:[158,104],occipital_L:[68,190],occipital_R:[152,190],neck_L:[95,266],neck_R:[125,266]}
+};
+const RNAME={
+  vertex:'Topo da cabeça',
+  forehead_R:'Testa dir.',forehead_L:'Testa esq.',
+  temple_R:'Têmpora dir.',temple_L:'Têmpora esq.',
+  eye_R:'Olho / atrás do olho dir.',eye_L:'Olho / atrás do olho esq.',
+  face_R:'Face / seios nasais dir.',face_L:'Face / seios nasais esq.',
+  jaw_R:'Maxilar dir.',jaw_L:'Maxilar esq.',
+  parietal_R:'Lateral posterior dir.',parietal_L:'Lateral posterior esq.',
+  occipital_R:'Nuca / occipital dir.',occipital_L:'Nuca / occipital esq.',
+  neck_R:'Pescoço dir.',neck_L:'Pescoço esq.'
+};
+const RORDER=Object.keys(RNAME);
+
+function intColor(i){
+  i=+i||0;
+  const stops=[[0,[156,200,168]],[3.5,[242,207,91]],[6.5,[240,154,74]],[10,[196,70,61]]];
+  for(let k=1;k<stops.length;k++){
+    if(i<=stops[k][0]){const [a,ca]=stops[k-1],[b,cb]=stops[k];const t=(i-a)/(b-a);
+      const c=ca.map((v,j)=>Math.round(v+(cb[j]-v)*t));return `rgb(${c.join(',')})`;}
+  }
+  return 'rgb(196,70,61)';
+}
+function intLabel(i){i=+i;if(i===0)return'Sem dor';if(i<=3)return'Ligeira';if(i<=6)return'Moderada';if(i<=8)return'Forte';return'Muito forte';}
+
+function headSVG(view,o){
+  // o: {mode:'pick'|'heat', sel:Set, counts:{}, max, intensity, uid}
+  const uid=o.uid||'x', cid=`cl-${view}-${uid}`;
+  const fillFor=id=>{
+    if(o.mode==='pick') return o.sel.has(id)?intColor(Math.max(o.intensity,3)):'#efe7dd';
+    const c=o.counts[id]||0; if(!c||!o.max) return '#f3eee8';
+    const a=0.18+0.82*(c/o.max); return `rgba(196,70,61,${a.toFixed(2)})`;
+  };
+  let s=`<svg viewBox="0 0 220 292" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cabeça — ${view==='front'?'frente':'trás'}">`;
+  s+=`<defs><clipPath id="${cid}"><ellipse cx="110" cy="136" rx="82" ry="108"/></clipPath></defs>`;
+  // ears
+  s+=`<ellipse cx="28" cy="140" rx="11" ry="22" fill="#e8ded2" stroke="#cbbfb1" stroke-width="1.5"/><ellipse cx="192" cy="140" rx="11" ry="22" fill="#e8ded2" stroke="#cbbfb1" stroke-width="1.5"/>`;
+  // neck
+  if(view==='back'){
+    NECK.forEach(([id,x,y,w,h])=>{s+=`<rect class="rg" data-r="${id}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fillFor(id)}" stroke="#fff" stroke-width="2"/>`;});
+    s+=`<rect x="80" y="226" width="60" height="60" fill="none" stroke="#cbbfb1" stroke-width="1.5" rx="2"/>`;
+  } else {
+    s+=`<path d="M84 228 L84 286 M136 228 L136 286" stroke="#cbbfb1" stroke-width="1.5" fill="none"/>`;
+  }
+  s+=`<ellipse cx="110" cy="136" rx="82" ry="108" fill="#efe7dd"/>`;
+  s+=`<g clip-path="url(#${cid})">`;
+  REG[view].forEach(([id,x,y,w,h])=>{s+=`<rect class="rg" data-r="${id}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fillFor(id)}" stroke="#fff" stroke-width="2"/>`;});
+  s+=`</g><ellipse cx="110" cy="136" rx="82" ry="108" fill="none" stroke="#b9ab9b" stroke-width="2" pointer-events="none"/>`;
+  const fo=o.mode==='heat'?0.35:0.7;
+  if(view==='front'){
+    s+=`<g pointer-events="none" fill="none" stroke="#5b5348" stroke-opacity="${fo}" stroke-width="2" stroke-linecap="round">
+      <path d="M66 108 q16 -8 32 0"/><path d="M122 108 q16 -8 32 0"/>
+      <ellipse cx="82" cy="124" rx="11" ry="6"/><ellipse cx="138" cy="124" rx="11" ry="6"/>
+      <path d="M110 130 L104 166 q6 5 12 0"/><path d="M92 196 q18 10 36 0"/></g>`;
+  } else {
+    s+=`<g pointer-events="none" fill="none" stroke="#5b5348" stroke-opacity="${fo*0.6}" stroke-width="1.5"><path d="M110 40 L110 236" stroke-dasharray="3 5"/></g>`;
+  }
+  // side labels
+  const L=view==='front'?['DIR','ESQ']:['ESQ','DIR'];
+  s+=`<g pointer-events="none" font-family="DM Sans,sans-serif" font-size="12" font-weight="700" fill="#8a7f72"><text x="6" y="284">${L[0]}</text><text x="214" y="284" text-anchor="end">${L[1]}</text></g>`;
+  if(o.mode==='heat'){
+    s+=`<g pointer-events="none" font-family="DM Sans,sans-serif" font-size="14" font-weight="700" text-anchor="middle">`;
+    const pts=LBLPT[view];
+    Object.keys(pts).forEach(id=>{const c=o.counts[id]||0;if(!c)return;const [x,y]=pts[id];
+      s+=`<text x="${x}" y="${y+5}" fill="#1d2733" stroke="#fff" stroke-width="3" paint-order="stroke">${c}</text>`;});
+    s+=`</g>`;
+  }
+  return s+`</svg>`;
+}
+
+/* ---------------- utils ---------------- */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+function toInput(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function dayKey(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function parse(s){if(!s)return null;const d=new Date(s);return isNaN(d)?null:d;}
+function durMin(ep){const a=parse(ep.start),b=parse(ep.end);if(!a||!b)return null;const m=Math.round((b-a)/60000);return m>=0?m:null;}
+function fmtDur(m){if(m==null)return'—';if(m<60)return m+' min';const d=Math.floor(m/1440),h=Math.floor((m%1440)/60),mi=m%60;
+  if(d)return d+' d'+(h?' '+h+' h':'');return h+' h'+(mi?' '+mi+' min':'');}
+function fmtDT(s){const d=parse(s);if(!d)return'—';return d.toLocaleDateString('pt-PT',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+', '+pad(d.getHours())+':'+pad(d.getMinutes());}
+function fmtShort(s){const d=parse(s);if(!d)return'—';return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function newId(){return 'ep-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);}
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),2400);}
+function sideOf(regs){const r=regs.some(x=>x.endsWith('_R')),l=regs.some(x=>x.endsWith('_L'));
+  if(r&&l)return'Bilateral';if(r)return'Direita';if(l)return'Esquerda';if(regs.includes('vertex'))return'Central';return'';}
+function medNames(ep){return (ep.meds||[]).filter(m=>m.name&&m.name.trim());}
+
+/* ---------------- state ---------------- */
+const state={episodes:[],profile:{},mode:'loading',editingId:null,draft:null,tab:'log',period:90};
+function blankDraft(){return{start:toInput(new Date()),end:'',intensity:5,regions:[],quality:[],symptoms:[],auraYN:'',auraTypes:[],auraTiming:'',auraMin:'',triggers:[],triggerOther:'',meds:[],nonMed:[],overall:'',impact:'',redFlags:[],notes:''};}
+state.draft=blankDraft();
+
+/* ---------------- storage ---------------- */
+const LS='cefaleias.diario.v1';
+let resolveReady, ready=new Promise(r=>resolveReady=r);
+function lsLoad(){try{return JSON.parse(localStorage.getItem(LS)||'{}')||{}}catch(e){return{}}}
+function lsSave(){try{localStorage.setItem(LS,JSON.stringify({episodes:state.episodes,profile:state.profile}))}catch(e){}}
+function setStatus(kind,txt){const s=$('#status');s.className='status '+(kind||'');$('#statusTxt').textContent=txt;}
+
+function initStorage(){
+  state.mode='local';
+  const d=lsLoad();state.episodes=d.episodes||[];state.profile=d.profile||{};
+  setStatus('ok','Guardado neste telefone');
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+  resolveReady();renderData();
+}
+window.addEventListener('storage',e=>{if(e.key===LS){const d=lsLoad();state.episodes=d.episodes||[];state.profile=d.profile||{};renderData();}});
+async function writeDoc(id,obj){
+  if(obj.kind==='ep'){const i=state.episodes.findIndex(x=>x.id===id);if(i>=0)state.episodes[i]=obj;else state.episodes.push(obj);}
+  else state.profile=obj;
+  try{localStorage.setItem(LS,JSON.stringify({episodes:state.episodes,profile:state.profile}));}
+  catch(e){toast('Não foi possível guardar no telefone');return false;}
+  renderData();return true;
+}
+async function deleteDoc(id){
+  state.episodes=state.episodes.filter(x=>x.id!==id);lsSave();renderData();return true;
+}
+
+/* ---------------- form ---------------- */
+function renderChips(){
+  $$('.chips[data-key]').forEach(box=>{
+    const key=box.dataset.key,single=!!box.dataset.single,opts=OPT[key],d=state.draft;
+    box.innerHTML=opts.map(o=>{const on=single?d[key]===o:(d[key]||[]).includes(o);
+      return `<button type="button" class="chip${on?' on':''}" data-v="${esc(o)}">${esc(o)}</button>`;}).join('');
+  });
+  $('#auraBox').classList.toggle('hidden',state.draft.auraYN!=='Sim');
+  $('#alarm').classList.toggle('show',state.draft.redFlags.length>0);
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.chips[data-key] .chip');if(!b)return;
+  const box=b.parentElement,key=box.dataset.key,v=b.dataset.v,d=state.draft;
+  if(box.dataset.single){d[key]=d[key]===v?'':v;}
+  else{const a=d[key]||(d[key]=[]);const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);}
+  renderChips();
+});
+function renderHeads(){
+  const d=state.draft,sel=new Set(d.regions);
+  $('#headPick').innerHTML=['front','back'].map(v=>`<div class="headbox"><div class="t">${v==='front'?'Frente':'Trás'}</div>${headSVG(v,{mode:'pick',sel,intensity:d.intensity,uid:'p'})}</div>`).join('');
+  const regs=RORDER.filter(r=>sel.has(r));
+  $('#regList').innerHTML=regs.length?`<span style="font-weight:600;margin-right:6px">${sideOf(regs)}:</span>`+regs.map(r=>`<span class="pill">${RNAME[r]}</span>`).join(''):'<span class="hint">Nenhuma zona marcada</span>';
+}
+$('#headPick').addEventListener('click',e=>{
+  const r=e.target.closest('[data-r]');if(!r)return;const id=r.getAttribute('data-r'),a=state.draft.regions;
+  const i=a.indexOf(id);if(i>=0)a.splice(i,1);else a.push(id);renderHeads();
+});
+$('#clrReg').onclick=()=>{state.draft.regions=[];renderHeads();};
+function renderInt(){const v=+state.draft.intensity;$('#intVal').textContent=v;$('#intVal').style.color=intColor(v);$('#intLbl').textContent=intLabel(v);$('#fInt').value=v;}
+$('#fInt').addEventListener('input',e=>{state.draft.intensity=+e.target.value;renderInt();renderHeads();});
+function renderDur(){
+  const d=state.draft,m=durMin(d);
+  if(!d.start){$('#durTxt').textContent='';return;}
+  if(!d.end){$('#durTxt').innerHTML='<b>Em curso</b> — sem hora de fim';return;}
+  $('#durTxt').innerHTML=m==null?'<span style="color:var(--accent)">O fim é anterior ao início</span>':`Duração: <b>${fmtDur(m)}</b>`;
+}
+['fStart','fEnd'].forEach(id=>$('#'+id).addEventListener('input',e=>{state.draft[id==='fStart'?'start':'end']=e.target.value;renderDur();}));
+$$('[data-now]').forEach(b=>b.onclick=()=>{const id=b.dataset.now,v=toInput(new Date());$('#'+id).value=v;state.draft[id==='fStart'?'start':'end']=v;renderDur();});
+$('#fAuraMin').addEventListener('input',e=>state.draft.auraMin=e.target.value);
+$('#fTrigOther').addEventListener('input',e=>state.draft.triggerOther=e.target.value);
+$('#fNotes').addEventListener('input',e=>state.draft.notes=e.target.value);
+$('#medList').innerHTML=MEDS.map(m=>`<option value="${esc(m)}">`).join('');
+function renderMeds(){
+  const d=state.draft;
+  $('#meds').innerHTML=d.meds.map((m,i)=>`<div class="med">
+    <button class="rm" type="button" data-rm="${i}">Remover ✕</button>
+    <div class="grid" style="clear:both">
+      <div><div class="mini">Medicamento</div><input type="text" list="medList" data-i="${i}" data-f="name" value="${esc(m.name)}" placeholder="ex: Ibuprofeno"></div>
+      <div><div class="mini">Dose</div><input type="text" data-i="${i}" data-f="dose" value="${esc(m.dose)}" placeholder="ex: 400 mg"></div>
+    </div>
+    <div class="grid3">
+      <div><div class="mini">Hora</div><input type="time" data-i="${i}" data-f="time" value="${esc(m.time)}"></div>
+      <div class="rl"><div class="mini">Alívio</div><select data-i="${i}" data-f="relief">${RELIEF.map(r=>`<option value="${esc(r)}"${m.relief===r?' selected':''}>${r||'—'}</option>`).join('')}</select></div>
+      <div><div class="mini">Alívio após (min)</div><input type="number" min="0" inputmode="numeric" data-i="${i}" data-f="after" value="${esc(m.after)}" placeholder="ex: 45"></div>
+    </div></div>`).join('');
+}
+$('#meds').addEventListener('input',e=>{const t=e.target;if(t.dataset.i==null)return;state.draft.meds[+t.dataset.i][t.dataset.f]=t.value;});
+$('#meds').addEventListener('change',e=>{const t=e.target;if(t.dataset.i==null)return;state.draft.meds[+t.dataset.i][t.dataset.f]=t.value;});
+$('#meds').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(!b)return;state.draft.meds.splice(+b.dataset.rm,1);renderMeds();});
+$('#addMed').onclick=()=>{const t=new Date();state.draft.meds.push({name:'',dose:'',time:`${pad(t.getHours())}:${pad(t.getMinutes())}`,relief:'',after:''});renderMeds();
+  const ins=$$('#meds input[data-f="name"]');if(ins.length)ins[ins.length-1].focus();};
+
+function loadForm(){
+  const d=state.draft;
+  $('#fStart').value=d.start||'';$('#fEnd').value=d.end||'';
+  $('#fAuraMin').value=d.auraMin||'';$('#fTrigOther').value=d.triggerOther||'';$('#fNotes').value=d.notes||'';
+  renderInt();renderHeads();renderChips();renderMeds();renderDur();
+  const ed=!!state.editingId;
+  $('#editBanner').style.display=ed?'block':'none';
+  $('#editWhen').textContent=ed?'· '+fmtDT(d.start):'';
+  $('#cancelEdit').classList.toggle('hidden',!ed);
+  $('#saveBtn').textContent=ed?'Guardar alterações':'Guardar registo';
+}
+$('#cancelEdit').onclick=()=>{state.editingId=null;state.draft=blankDraft();loadForm();showTab('hist');};
+$('#saveBtn').onclick=async()=>{
+  const d=state.draft;
+  if(!parse(d.start)){toast('Indique a hora de início');$('#fStart').focus();return;}
+  if(d.end&&durMin(d)==null){toast('O fim é anterior ao início');return;}
+  const btn=$('#saveBtn');btn.disabled=true;
+  const prev=state.editingId?state.episodes.find(x=>x.id===state.editingId):null;
+  const id=state.editingId||newId();
+  const ep=JSON.parse(JSON.stringify(d));
+  ep.kind='ep';ep.id=id;ep.intensity=+ep.intensity;
+  ep.meds=ep.meds.filter(m=>(m.name||'').trim()||m.dose||m.relief);
+  if(ep.auraYN!=='Sim'){ep.auraTypes=[];ep.auraTiming='';ep.auraMin='';}
+  ep.createdAt=prev&&prev.createdAt||new Date().toISOString();ep.updatedAt=new Date().toISOString();
+  const ok=await writeDoc(id,ep);btn.disabled=false;
+  if(!ok)return;
+  toast(state.editingId?'Alterações guardadas':'Registo guardado');
+  state.editingId=null;state.draft=blankDraft();loadForm();window.scrollTo({top:0,behavior:'smooth'});
+};
+
+/* ---------------- history ---------------- */
+const pendingDel={};
+function sorted(){return state.episodes.slice().sort((a,b)=>(b.start||'').localeCompare(a.start||''));}
+function renderHist(){
+  const eps=sorted(),box=$('#histList');
+  if(!eps.length){box.innerHTML=`<div class="empty"><div class="e">Ainda sem registos</div>Quando tiver uma dor de cabeça, registe-a no separador “Registar”.</div>`;return;}
+  box.innerHTML=`<p class="hint" style="margin:0 4px 10px">${eps.length} registo${eps.length>1?'s':''}</p>`+eps.map(ep=>{
+    const regs=RORDER.filter(r=>(ep.regions||[]).includes(r));const side=sideOf(regs);
+    const tags=[];
+    if(!ep.end)tags.push('<span class="live">Em curso</span>');
+    if(side)tags.push(`<span>${esc(side)}${regs.length?' · '+esc(regs.map(r=>RNAME[r]).slice(0,3).join(', '))+(regs.length>3?'…':''):''}</span>`);
+    if(ep.auraYN==='Sim')tags.push('<span class="aura">Aura</span>');
+    (ep.quality||[]).slice(0,2).forEach(q=>tags.push(`<span>${esc(q)}</span>`));
+    medNames(ep).forEach(m=>tags.push(`<span>💊 ${esc(m.name)}${m.relief?' — '+esc(m.relief.toLowerCase()):''}</span>`));
+    if(ep.redFlags&&ep.redFlags.length)tags.push('<span class="live">Sinal de alarme</span>');
+    return `<div class="ep"><div class="h"><div><div class="d">${esc(fmtDT(ep.start))}</div>
+      <div class="m">${ep.end?'Duração '+fmtDur(durMin(ep)):'Sem hora de fim'} · ${intLabel(ep.intensity)}</div></div>
+      <div class="badge" style="background:${intColor(ep.intensity)}">${ep.intensity}</div></div>
+      <div class="tags">${tags.join('')}</div>
+      <div class="acts">${!ep.end?`<button class="btn sm primary" data-end="${ep.id}">Terminou agora</button>`:''}
+      <button class="btn sm" data-edit="${ep.id}">Editar</button>
+      <button class="btn sm danger${pendingDel[ep.id]?' confirm':''}" data-del="${ep.id}">${pendingDel[ep.id]?'Confirmar apagar':'Apagar'}</button></div></div>`;
+  }).join('');
+}
+$('#histList').addEventListener('click',async e=>{
+  const ed=e.target.closest('[data-edit]'),dl=e.target.closest('[data-del]'),en=e.target.closest('[data-end]');
+  if(ed){const ep=state.episodes.find(x=>x.id===ed.dataset.edit);if(!ep)return;
+    state.editingId=ep.id;const d=Object.assign(blankDraft(),JSON.parse(JSON.stringify(ep)));delete d.kind;delete d.id;delete d.createdAt;delete d.updatedAt;
+    state.draft=d;loadForm();showTab('log');window.scrollTo({top:0});}
+  if(dl){const id=dl.dataset.del;
+    if(pendingDel[id]){delete pendingDel[id];if(await deleteDoc(id))toast('Registo apagado');}
+    else{pendingDel[id]=true;renderHist();setTimeout(()=>{if(pendingDel[id]){delete pendingDel[id];renderHist();}},4000);}}
+  if(en){const ep=state.episodes.find(x=>x.id===en.dataset.end);if(!ep)return;
+    const upd=Object.assign({},ep,{end:toInput(new Date()),updatedAt:new Date().toISOString()});
+    if(durMin(upd)==null){toast('A hora de início está no futuro');return;}
+    if(await writeDoc(ep.id,upd))toast('Duração: '+fmtDur(durMin(upd)));}
+});
+
+/* ---------------- report ---------------- */
+function inPeriod(){
+  const p=state.period;let eps=sorted();
+  if(p){const lim=Date.now()-p*86400000;eps=eps.filter(e=>{const d=parse(e.start);return d&&d.getTime()>=lim;});}
+  return eps;
+}
+function periodLabel(eps){
+  const p=state.period;const now=new Date();
+  if(p){const a=new Date(Date.now()-p*86400000);return `${a.toLocaleDateString('pt-PT')} a ${now.toLocaleDateString('pt-PT')}`;}
+  if(!eps.length)return'Todos os registos';
+  return `${parse(eps[eps.length-1].start).toLocaleDateString('pt-PT')} a ${now.toLocaleDateString('pt-PT')}`;
+}
+function count(arr){const m={};arr.forEach(x=>{if(x)m[x]=(m[x]||0)+1;});return m;}
+function bars(m,total,limit){
+  const e=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,limit||10);
+  if(!e.length)return'<div class="none">Sem dados</div>';
+  return e.map(([k,v])=>`<div class="bar"><div>${esc(k)}</div><div class="tr"><div class="fl" style="width:${Math.round(100*v/Math.max(total,1))}%"></div></div><div class="c">${v} · ${Math.round(100*v/Math.max(total,1))}%</div></div>`).join('');
+}
+function coveredDays(ep){
+  const a=parse(ep.start);if(!a)return[];const b=parse(ep.end)||a;const out=[];
+  const d=new Date(a.getFullYear(),a.getMonth(),a.getDate());const endD=new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  let n=0;while(d<=endD&&n<14){out.push(dayKey(d));d.setDate(d.getDate()+1);n++;}return out;
+}
+function stats(eps){
+  const n=eps.length,dayMax={},medDays=new Set();
+  eps.forEach(e=>{coveredDays(e).forEach(k=>{dayMax[k]=Math.max(dayMax[k]||0,+e.intensity||0);});
+    if(medNames(e).length){const a=parse(e.start);if(a)medDays.add(dayKey(a));}});
+  const durs=eps.map(durMin).filter(x=>x!=null).sort((a,b)=>a-b);
+  const avgDur=durs.length?Math.round(durs.reduce((a,b)=>a+b,0)/durs.length):null;
+  const medDur=durs.length?durs[Math.floor((durs.length-1)/2)]:null;
+  const avgInt=n?(eps.reduce((a,e)=>a+(+e.intensity||0),0)/n):null;
+  const regions=count(eps.flatMap(e=>e.regions||[]));
+  const sides=count(eps.map(e=>sideOf(e.regions||[])||'Não indicado'));
+  const quality=count(eps.flatMap(e=>e.quality||[]));
+  const symptoms=count(eps.flatMap(e=>e.symptoms||[]));
+  const trig=count(eps.flatMap(e=>(e.triggers||[]).concat((e.triggerOther||'').split(/[,;]/).map(s=>s.trim()).filter(Boolean))));
+  const nonMed=count(eps.flatMap(e=>e.nonMed||[]));
+  const impact=count(eps.map(e=>e.impact).filter(Boolean));
+  const aura=eps.filter(e=>e.auraYN==='Sim');
+  const auraTypes=count(aura.flatMap(e=>e.auraTypes||[]));
+  const tod={'Madrugada (0–6h)':0,'Manhã (6–12h)':0,'Tarde (12–18h)':0,'Noite (18–24h)':0};
+  eps.forEach(e=>{const d=parse(e.start);if(!d)return;const h=d.getHours();tod[Object.keys(tod)[Math.floor(h/6)]]++;});
+  const tx={};
+  eps.forEach(e=>medNames(e).forEach(m=>{const k=m.name.trim();const key=k.toLowerCase();
+    const t=tx[key]||(tx[key]={name:k,n:0,total:0,partial:0,none:0,after:[],doses:new Set()});
+    t.n++;if(m.relief==='Alívio total')t.total++;else if(m.relief==='Alívio parcial')t.partial++;else if(m.relief==='Sem alívio')t.none++;
+    if(m.after!==''&&m.after!=null&&!isNaN(+m.after))t.after.push(+m.after);if(m.dose)t.doses.add(m.dose.trim());}));
+  const flags=eps.filter(e=>e.redFlags&&e.redFlags.length);
+  return{n,dayMax,painDays:Object.keys(dayMax).length,medDays:medDays.size,avgDur,medDur,durN:durs.length,avgInt,regions,sides,quality,symptoms,trig,nonMed,impact,aura,auraTypes,tod,tx:Object.values(tx).sort((a,b)=>b.n-a.n),flags};
+}
+function calendar(st,eps){
+  const now=new Date();let first;
+  if(state.period){first=new Date(Date.now()-state.period*86400000);}
+  else first=eps.length?parse(eps[eps.length-1].start):now;
+  let y=first.getFullYear(),m=first.getMonth();
+  const months=[];while((y<now.getFullYear()||(y===now.getFullYear()&&m<=now.getMonth()))){months.push([y,m]);m++;if(m>11){m=0;y++;}}
+  const show=months.slice(-12);
+  const medSet=new Set();eps.forEach(e=>{if(medNames(e).length){const a=parse(e.start);if(a)medSet.add(dayKey(a));}});
+  return `<div class="months">`+show.map(([yy,mm])=>{
+    const d1=new Date(yy,mm,1),days=new Date(yy,mm+1,0).getDate(),off=(d1.getDay()+6)%7;
+    let c=['S','T','Q','Q','S','S','D'].map(x=>`<div class="hd">${x}</div>`).join('');
+    for(let i=0;i<off;i++)c+='<div class="x"></div>';
+    for(let d=1;d<=days;d++){const k=`${yy}-${pad(mm+1)}-${pad(d)}`,v=st.dayMax[k];
+      c+=`<div class="${v!=null?'p':''}${medSet.has(k)?' m':''}"${v!=null?` style="background:${intColor(v)}"`:''}>${d}</div>`;}
+    return `<div class="mo avoid"><div class="mt">${(m=>m.charAt(0).toUpperCase()+m.slice(1))(d1.toLocaleDateString('pt-PT',{month:'long',year:'numeric'}))}</div><div class="cal">${c}</div></div>`;
+  }).join('')+`</div><div class="legend"><span><i style="background:${intColor(2)}"></i>Ligeira</span><span><i style="background:${intColor(5)}"></i>Moderada</span><span><i style="background:${intColor(8)}"></i>Forte</span><span><i style="background:#fff;box-shadow:inset 0 0 0 2px #1d2733"></i>Tomou medicação</span></div>`;
+}
+function reportMarkup(){
+  const eps=inPeriod(),st=stats(eps),p=state.profile||{};
+  const per=periodLabel(eps);
+  const spanDays=state.period||(eps.length?Math.max(1,Math.ceil((Date.now()-parse(eps[eps.length-1].start).getTime())/86400000)):0);
+  const perMonth=v=>spanDays?(v*30/spanDays).toFixed(1).replace('.',','):'—';
+  let h=`<div class="rep"><div class="rh"><div><h1>Diário de dores de cabeça</h1><p>Período: ${esc(per)} · Gerado em ${new Date().toLocaleDateString('pt-PT')}</p></div>
+    <div class="who">${p.name?`<b>${esc(p.name)}</b>`:''}</div></div>`;
+  if(!eps.length){return h+`<p class="none" style="margin-top:16px">Sem registos neste período.</p></div>`;}
+  const kp=(k,v,s)=>`<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;
+  h+=`<div class="kpis">
+    ${kp('Episódios',st.n,perMonth(st.n)+' por mês')}
+    ${kp('Dias com dor',st.painDays,perMonth(st.painDays)+' por mês')}
+    ${kp('Intensidade média',st.avgInt.toFixed(1).replace('.',',')+'<span style="font-size:14px">/10</span>',intLabel(Math.round(st.avgInt)))}
+    ${kp('Duração média',fmtDur(st.avgDur),st.durN?'mediana '+fmtDur(st.medDur)+' · '+st.durN+' com fim':'sem horas de fim')}
+    ${kp('Com aura',st.aura.length,Math.round(100*st.aura.length/st.n)+'% dos episódios')}
+    ${kp('Dias com medicação aguda',st.medDays,perMonth(st.medDays)+' por mês')}
+  </div>`;
+  if(p.preventive)h+=`<div class="info"><b>Medicação habitual / preventiva:</b> ${esc(p.preventive)}</div>`;
+  if(st.flags.length)h+=`<div class="flag"><b>Sinais de alarme registados em ${st.flags.length} episódio(s):</b> ${esc([...new Set(st.flags.flatMap(e=>e.redFlags))].join('; '))}</div>`;
+  h+=`<h3>Calendário</h3>${calendar(st,eps)}`;
+  const mx=Math.max(0,...Object.values(st.regions));
+  h+=`<h3>Localização da dor</h3><div class="heads2 avoid">
+    <div><div class="t">Frente</div>${headSVG('front',{mode:'heat',counts:st.regions,max:mx,uid:'rf'})}</div>
+    <div><div class="t">Trás</div>${headSVG('back',{mode:'heat',counts:st.regions,max:mx,uid:'rb'})}</div>
+    <div class="sides">${bars(st.sides,st.n)}<div class="none" style="margin-top:6px">Números = nº de episódios com dor nessa zona.</div></div></div>`;
+  h+=`<div class="g2"><div class="avoid"><h3>Características da dor</h3>${bars(st.quality,st.n)}</div><div class="avoid"><h3>Sinais e sintomas</h3>${bars(st.symptoms,st.n,12)}</div></div>`;
+  h+=`<div class="g2"><div class="avoid"><h3>Possíveis gatilhos</h3>${bars(st.trig,st.n,12)}</div><div class="avoid"><h3>Hora de início</h3>${bars(st.tod,st.n)}
+    ${st.aura.length?`<h3>Tipos de aura</h3>${bars(st.auraTypes,st.aura.length)}`:''}</div></div>`;
+  h+=`<h3>Tratamentos e alívio</h3>`;
+  if(st.tx.length){
+    h+=`<div class="scroll"><table><thead><tr><th>Medicamento</th><th>Doses</th><th>Vezes</th><th>Alívio total</th><th>Parcial</th><th>Sem alívio</th><th>Tempo até alívio</th></tr></thead><tbody>`+
+    st.tx.map(t=>{const af=t.after.length?Math.round(t.after.reduce((a,b)=>a+b,0)/t.after.length)+' min (média)':'—';
+      return `<tr><td><b>${esc(t.name)}</b></td><td>${esc([...t.doses].join(', ')||'—')}</td><td>${t.n}</td><td>${t.total}</td><td>${t.partial}</td><td>${t.none}</td><td>${af}</td></tr>`;}).join('')+`</tbody></table></div>`;
+  } else h+=`<div class="none">Sem medicação registada.</div>`;
+  h+=`<div class="g2"><div class="avoid"><h3>Outras medidas</h3>${bars(st.nonMed,st.n)}</div><div class="avoid"><h3>Impacto no dia</h3>${bars(st.impact,st.n)}</div></div>`;
+  h+=`<h3>Registo detalhado</h3><div class="scroll"><table class="wide"><thead><tr><th>Início</th><th>Duração</th><th>Int.</th><th>Local</th><th>Dor</th><th>Aura</th><th>Sintomas</th><th>Gatilhos</th><th>Tratamento</th><th>Notas</th></tr></thead><tbody>`+
+    eps.map(e=>{const regs=RORDER.filter(r=>(e.regions||[]).includes(r));
+      const aura=e.auraYN==='Sim'?['Sim',(e.auraTypes||[]).join(', '),e.auraTiming,e.auraMin?e.auraMin+' min':''].filter(Boolean).join(' · '):(e.auraYN==='Não'?'Não':'—');
+      const tr=medNames(e).map(m=>[m.name,m.dose,m.time?'às '+m.time:'',m.relief?'('+m.relief.toLowerCase()+(m.after?' em '+m.after+' min':'')+')':''].filter(Boolean).join(' ')).concat(e.nonMed||[]);
+      if(e.overall)tr.push('Final: '+e.overall.toLowerCase());
+      const trig=(e.triggers||[]).concat(e.triggerOther?[e.triggerOther]:[]);
+      return `<tr><td style="white-space:nowrap">${esc(fmtShort(e.start))}</td><td style="white-space:nowrap">${e.end?fmtDur(durMin(e)):'em curso'}</td>
+        <td><span class="int" style="background:${intColor(e.intensity)}">${e.intensity}</span></td>
+        <td>${esc(sideOf(regs))}${regs.length?': '+esc(regs.map(r=>RNAME[r]).join(', ')):''}</td>
+        <td>${esc((e.quality||[]).join(', '))}</td><td>${esc(aura)}</td><td>${esc((e.symptoms||[]).join(', '))}</td><td>${esc(trig.join(', '))}</td>
+        <td>${esc(tr.join('; '))}</td><td>${esc([e.impact?'Impacto: '+e.impact.split(' —')[0].toLowerCase():'',(e.redFlags||[]).length?'⚠ '+e.redFlags.join('; '):'',e.notes].filter(Boolean).join(' · '))}</td></tr>`;}).join('')+
+    `</tbody></table></div>`;
+  if(p.notes)h+=`<h3>Perguntas / notas para o médico</h3><div style="font-size:13px;white-space:pre-wrap">${esc(p.notes)}</div>`;
+  h+=`<div class="foot">Registo feito pelo próprio doente. Intensidade numa escala de 0 a 10 no pior momento do episódio.</div></div>`;
+  return h;
+}
+function renderRep(){$('#repView').innerHTML=reportMarkup();
+  const p=state.profile||{};[['pName','name'],['pPrev','preventive'],['pNotes','notes']].forEach(([id,k])=>{const el=$('#'+id);if(document.activeElement!==el)el.value=p[k]||'';});}
+$('#period').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;state.period=+b.dataset.p;
+  $$('#period button').forEach(x=>x.classList.toggle('on',x===b));renderRep();});
+let profTimer=null;
+function queueProfile(){clearTimeout(profTimer);profTimer=setTimeout(saveProfile,800);}
+async function saveProfile(){
+  const p={kind:'profile',name:$('#pName').value.trim(),preventive:$('#pPrev').value.trim(),notes:$('#pNotes').value};
+  const o=state.profile||{};if(o.name===p.name&&o.preventive===p.preventive&&o.notes===p.notes)return;
+  await writeDoc('profile',p);
+}
+['pName','pPrev','pNotes'].forEach(id=>{$('#'+id).addEventListener('input',queueProfile);$('#'+id).addEventListener('blur',()=>{clearTimeout(profTimer);saveProfile();});});
+
+/* ---------------- export ---------------- */
+function stamp(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+async function offer(filename,data,mime,title){
+  const blob=data instanceof Blob?data:new Blob([data],{type:mime});
+  let file=null;try{file=new File([blob],filename,{type:mime||blob.type});}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:title||filename});return true;}
+    catch(e){if(e&&e.name==='AbortError')return false;}
+  }
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);toast('Ficheiro guardado nas Transferências');return true;
+}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+$('#exPdf').onclick=async()=>{
+  const b=$('#exPdf');b.disabled=true;const old=b.textContent;b.textContent='A preparar PDF…';
+  try{
+    if(!window.html2pdf)await loadScript('html2pdf.bundle.min.js');
+    const wrapEl=document.createElement('div');
+    wrapEl.style.cssText='position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none;z-index:-1';
+    const host=document.createElement('div');host.style.cssText='width:720px;background:#fff';wrapEl.appendChild(host);
+    host.innerHTML=`<style>${$('#repcss').textContent} .rep .kpis{grid-template-columns:repeat(3,1fr)!important}.rep .g2{grid-template-columns:1fr 1fr!important}.rep .heads2{grid-template-columns:1fr 1fr 1.1fr!important}.rep .scroll{overflow:visible}.rep .scroll table.wide{min-width:0}.rep table{font-size:10.5px}</style><div style="padding:4px 8px;background:#fff">${reportMarkup()}</div>`;
+    document.body.appendChild(wrapEl);
+    await Promise.all(Array.from(host.querySelectorAll('svg')).map(svg=>new Promise(res=>{
+      svg.setAttribute('width','400');svg.setAttribute('height',String(Math.round(400*292/220)));
+      const img=new Image();img.onload=res;img.onerror=res;
+      img.style.cssText='width:100%;max-width:200px;height:auto;display:block;margin:0 auto';
+      img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg.outerHTML);svg.replaceWith(img);})));
+    const blob=await window.html2pdf().set({margin:[10,9,12,9],image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:720},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:['.avoid','tr','.kpi']}}).from(host).outputPdf('blob');
+    wrapEl.remove();
+    await offer(`relatorio-dores-de-cabeca-${stamp()}.pdf`,blob,'application/pdf','Relatório de dores de cabeça');
+  }catch(e){toast('Não foi possível criar o PDF');}
+  b.disabled=false;b.textContent=old;
+};
+$('#exCsv').onclick=async()=>{
+  const eps=inPeriod();
+  const cols=['Início','Fim','Duração (min)','Intensidade','Lado','Zonas','Características','Sintomas','Aura','Tipo de aura','Momento da aura','Duração aura (min)','Gatilhos','Medicação','Outras medidas','Alívio geral','Impacto','Sinais de alarme','Notas'];
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=eps.map(e=>{const regs=RORDER.filter(r=>(e.regions||[]).includes(r));
+    return [e.start,e.end,durMin(e),e.intensity,sideOf(regs),regs.map(r=>RNAME[r]).join(', '),(e.quality||[]).join(', '),(e.symptoms||[]).join(', '),e.auraYN,(e.auraTypes||[]).join(', '),e.auraTiming,e.auraMin,
+      (e.triggers||[]).concat(e.triggerOther?[e.triggerOther]:[]).join(', '),medNames(e).map(m=>[m.name,m.dose,m.time,m.relief,m.after?m.after+' min':''].filter(Boolean).join(' / ')).join('; '),
+      (e.nonMed||[]).join(', '),e.overall,e.impact,(e.redFlags||[]).join('; '),e.notes].map(q).join(';');});
+  const csv='﻿'+cols.map(q).join(';')+'\r\n'+rows.join('\r\n');
+  await offer(`dores-de-cabeca-${stamp()}.csv`,csv,'text/csv');
+};
+function textSummary(){
+  const eps=inPeriod(),st=stats(eps),p=state.profile||{};
+  const top=(m,n)=>Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n||5).map(([k,v])=>`${k} (${v})`).join(', ')||'—';
+  let t=`DIÁRIO DE DORES DE CABEÇA${p.name?' — '+p.name:''}\nPeríodo: ${periodLabel(eps)}\n\n`;
+  if(!eps.length)return t+'Sem registos neste período.';
+  t+=`Episódios: ${st.n} | Dias com dor: ${st.painDays} | Dias com medicação: ${st.medDays}\n`;
+  t+=`Intensidade média: ${st.avgInt.toFixed(1)}/10 | Duração média: ${fmtDur(st.avgDur)} (mediana ${fmtDur(st.medDur)})\n`;
+  t+=`Com aura: ${st.aura.length} (${Math.round(100*st.aura.length/st.n)}%)\n`;
+  if(p.preventive)t+=`Medicação habitual: ${p.preventive}\n`;
+  t+=`\nLado: ${top(st.sides)}\nZonas: ${top(Object.fromEntries(Object.entries(st.regions).map(([k,v])=>[RNAME[k],v])),6)}\nCaracterísticas: ${top(st.quality)}\nSintomas: ${top(st.symptoms,6)}\nGatilhos: ${top(st.trig,6)}\n`;
+  t+=`\nTratamentos:\n`+(st.tx.length?st.tx.map(x=>`- ${x.name}: ${x.n}x — total ${x.total}, parcial ${x.partial}, sem alívio ${x.none}`).join('\n'):'- nenhum')+'\n';
+  if(st.flags.length)t+=`\nSinais de alarme em ${st.flags.length} episódio(s).\n`;
+  t+=`\nEpisódios:\n`+eps.map(e=>`- ${fmtShort(e.start)} · ${e.end?fmtDur(durMin(e)):'em curso'} · ${e.intensity}/10 · ${sideOf(e.regions||[])||'—'}${e.auraYN==='Sim'?' · aura':''}${medNames(e).length?' · '+medNames(e).map(m=>m.name+(m.relief?' ('+m.relief.toLowerCase()+')':'')).join(', '):''}`).join('\n');
+  if(p.notes)t+=`\n\nNotas: ${p.notes}`;
+  return t;
+}
+$('#exCopy').onclick=async()=>{
+  const t=textSummary();
+  try{await navigator.clipboard.writeText(t);toast('Resumo copiado');}
+  catch(e){
+    const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy');}catch(_){} ta.remove();toast(ok?'Resumo copiado':'Não foi possível copiar');
+  }
+};
+
+$('#exPrint').onclick=()=>{renderRep();setTimeout(()=>window.print(),50);};
+$('#bkExport').onclick=async()=>{
+  const data=JSON.stringify({app:'diario-cefaleias',version:1,exportedAt:new Date().toISOString(),episodes:state.episodes,profile:state.profile},null,1);
+  const ok=await offer(`copia-diario-cefaleias-${stamp()}.json`,data,'application/json','Cópia de segurança — diário de dores de cabeça');
+  if(ok){try{localStorage.setItem(LS+'.lastBackup',new Date().toISOString());}catch(e){}}
+  renderBackupInfo();
+};
+$('#bkImport').onclick=()=>$('#bkFile').click();
+$('#bkFile').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d||!Array.isArray(d.episodes))throw 0;
+    let added=0,upd=0;
+    d.episodes.forEach(ep=>{if(!ep||ep.kind!=='ep'||!ep.id)return;const i=state.episodes.findIndex(x=>x.id===ep.id);
+      if(i<0){state.episodes.push(ep);added++;}else if((ep.updatedAt||'')>(state.episodes[i].updatedAt||'')){state.episodes[i]=ep;upd++;}});
+    if(d.profile&&!state.profile.name&&!state.profile.preventive)state.profile=d.profile;
+    lsSave();renderData();renderBackupInfo();toast(`Restaurado: ${added} novo(s), ${upd} atualizado(s)`);
+  }catch(err){toast('Ficheiro inválido');}
+};
+function renderBackupInfo(){
+  let last=null;try{last=localStorage.getItem(LS+'.lastBackup');}catch(e){}
+  $('#bkInfo').textContent=`${state.episodes.length} registo(s) neste telefone. `+(last?'Última cópia: '+new Date(last).toLocaleDateString('pt-PT')+'.':'Ainda sem cópia de segurança.');
+}
+$('#shareApp').onclick=async()=>{
+  const url=location.href.split('#')[0];
+  const text='Diário de dores de cabeça — para registar as dores e mostrar ao médico. Abra no Chrome e toque em "Instalar a app". Funciona sem internet.';
+  if(navigator.share){try{await navigator.share({title:'Diário de dores de cabeça',text,url});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  try{await navigator.clipboard.writeText(text+' '+url);toast('Link copiado');}catch(e){toast(url);}
+};
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').classList.remove('hidden');});
+$('#installBtn').onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();try{await deferredPrompt.userChoice;}catch(e){}deferredPrompt=null;$('#installBtn').classList.add('hidden');};
+window.addEventListener('appinstalled',()=>{$('#installBtn').classList.add('hidden');toast('App instalada');});
+if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+
+/* ---------------- tabs ---------------- */
+function showTab(t){state.tab=t;
+  $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  ['log','hist','rep'].forEach(x=>$('#v-'+x).classList.toggle('hidden',x!==t));
+  $('#saveBar').classList.toggle('hidden',t!=='log');
+  if(t==='hist')renderHist();if(t==='rep'){renderRep();renderBackupInfo();}
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b){showTab(b.dataset.tab);window.scrollTo({top:0});}});
+function renderData(){if(state.tab==='hist')renderHist();if(state.tab==='rep')renderRep();
+  const n=state.episodes.filter(e=>!e.end).length;$('#tabs [data-tab="hist"]').textContent='Histórico'+(n?' •':'');}
+
+loadForm();
+initStorage();
+})();
+</script>
+</body>
+</html>

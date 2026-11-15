@@ -1,0 +1,29 @@
+DIÁRIO DE DORES DE CABEÇA — como pôr online (grátis, uma vez só)
+
+1. Crie uma conta grátis em https://github.com
+2. Clique em "+" (canto superior direito) > "New repository"
+   - Nome: diario-cefaleias
+   - Marque "Public" e clique "Create repository"
+3. Na página seguinte, clique em "uploading an existing file"
+   - Arraste TODOS os ficheiros desta pasta (não a pasta, os ficheiros)
+   - Clique "Commit changes"
+4. Vá a "Settings" > "Pages"
+   - Em "Branch" escolha "main" e "/ (root)" > "Save"
+5. Espere 1-2 minutos. A app fica em:
+   https://O-SEU-UTILIZADOR.github.io/diario-cefaleias/
+
+No telefone Android:
+- Abra o link no Chrome e toque em "Instalar a app no telefone"
+  (ou menu ⋮ > "Instalar app" / "Adicionar ao ecrã principal").
+- Depois de instalada funciona sem internet.
+
+Partilhar com a família:
+- Na app, separador Relatório > "Enviar a app a alguém" (WhatsApp, SMS, email…).
+
+Privacidade:
+- O GitHub guarda só o código da app. Os registos de cada pessoa ficam
+  apenas no telefone dela; ninguém mais os vê.
+
+Atualizar a app no futuro:
+- Volte a carregar o index.html novo no GitHub e, no sw.js, mude
+  "diario-cefaleias-v1" para "v2" (v3, …). Os telefones atualizam sozinhos.
